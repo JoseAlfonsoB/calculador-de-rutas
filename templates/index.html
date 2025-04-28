@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculador de Ruta Avanzado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+  <body>
+    <div class="main-container">
+      <!-- Columna izquierda - Formulario -->
+      <div class="form-container">
+        <h1>Calculador de Ruta Avanzado</h1>
+        <p class="subtitle">Optimiza tus rutas de entrega</p>
+  
+        <select id="inicio"></select>
+        <select id="fin"></select>
+        <button onclick="calcularRuta()">Calcular Ruta</button>
+  
+        <div id="resultado"></div>
+      </div>
+  
+      <!-- Columna derecha - Mapa -->
+      <div class="map-container">
+        <div class="map-placeholder">
+          <div class="map-title">Visualización de la Ruta</div>
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Resto de tu código... -->
+  </body>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const ciudades = [
+      "Jiloyork", "Toluca", "Atlacomulco", "Guadalajara", "Monterrey",
+      "QuintanaRoo", "Michohacan", "Aguascalientes", "CDMX", "QRO"
+    ];
+
+    const inicioSelect = document.getElementById('inicio');
+    const finSelect = document.getElementById('fin');
+
+    ciudades.forEach(ciudad => {
+      inicioSelect.innerHTML += `<option value="${ciudad}">${ciudad}</option>`;
+      finSelect.innerHTML += `<option value="${ciudad}">${ciudad}</option>`;
+    });
+
+    // Crear el mapa
+    const map = L.map('map').setView([21, -100], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a>'
+    }).addTo(map);
+
+    let polyline = null;
+
+    async function calcularRuta() {
+      const inicio = inicioSelect.value;
+      const fin = finSelect.value;
+
+      const respuesta = await fetch('/calcular_ruta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inicio, fin })
+      });
+
+      const datos = await respuesta.json();
+
+      document.getElementById('resultado').innerHTML = `
+        <h3>Ruta:</h3>
+        <p>${datos.ruta.join(' ➔ ')}</p>
+        <h3>Distancia Total:</h3>
+        <p>${datos.distancia_total.toFixed(2)} unidades</p>
+      `;
+
+      if (polyline) {
+        map.removeLayer(polyline);
+      }
+
+      polyline = L.polyline(datos.coordenadas, { color: 'blue' }).addTo(map);
+      map.fitBounds(polyline.getBounds());
+    }
+  </script>
+</body>
+</html>
